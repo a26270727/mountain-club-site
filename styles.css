@@ -151,6 +151,13 @@ h1 {
   line-height: 1;
 }
 
+.summary-card small {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .summary-card.subsidy strong {
   color: var(--clay);
 }
@@ -272,6 +279,10 @@ button:hover {
   margin-top: 18px;
 }
 
+.subsidy-history-panel {
+  grid-column: 1 / -1;
+}
+
 .entry-list {
   display: grid;
   gap: 12px;
@@ -320,6 +331,10 @@ button:hover {
   border-radius: 999px;
   padding: 5px 9px;
   background: #edf3ed;
+}
+
+.subsidy-entry {
+  border-left-color: var(--clay);
 }
 
 @media (max-width: 900px) {

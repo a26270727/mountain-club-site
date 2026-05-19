@@ -33,6 +33,7 @@
         <article class="summary-card subsidy">
           <span>剩餘補助款</span>
           <strong id="subsidyTotal">NT$ 0</strong>
+          <small id="subsidyUpdatedAt">尚未更新</small>
         </article>
       </section>
 
@@ -40,7 +41,7 @@
         <div class="panel">
           <div class="panel-heading">
             <h2>發想人許願</h2>
-            <p>填寫想去的山，讓大家一起投票與規劃。</p>
+            <p>填寫想去的山，讓大家一起規劃。</p>
           </div>
           <form id="wishForm" class="form-grid">
             <label>
@@ -120,6 +121,14 @@
             <button id="clearSignups" class="ghost-button" type="button">清空</button>
           </div>
           <div id="signupList" class="entry-list empty"></div>
+        </div>
+
+        <div class="list-panel subsidy-history-panel">
+          <div class="panel-heading compact">
+            <h2>補助款更新紀錄</h2>
+            <button id="clearSubsidyHistory" class="ghost-button" type="button">清空</button>
+          </div>
+          <div id="subsidyHistoryList" class="entry-list empty"></div>
         </div>
       </section>
     </main>

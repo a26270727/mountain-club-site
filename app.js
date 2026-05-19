@@ -8,7 +8,8 @@ const defaultState = {
     amount: 0,
     memo: "",
     updatedAt: ""
-  }
+  },
+  subsidyHistory: []
 };
 
 const state = loadState();
@@ -22,8 +23,16 @@ const formatter = new Intl.NumberFormat("zh-TW", {
 
 function loadState() {
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return { ...defaultState, ...saved };
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    return {
+      ...defaultState,
+      ...saved,
+      subsidy: {
+        ...defaultState.subsidy,
+        ...(saved.subsidy || {})
+      },
+      subsidyHistory: saved.subsidyHistory || []
+    };
   } catch {
     return structuredClone(defaultState);
   }
@@ -61,8 +70,12 @@ function render() {
   $("#wishCount").textContent = state.wishes.length;
   $("#signupCount").textContent = state.signups.length;
   $("#subsidyTotal").textContent = formatter.format(state.subsidy.amount || 0);
+  $("#subsidyUpdatedAt").textContent = state.subsidy.updatedAt
+    ? `最後更新：${state.subsidy.updatedAt}`
+    : "尚未更新";
   renderWishes();
   renderSignups();
+  renderSubsidyHistory();
 }
 
 function renderWishes() {
@@ -98,6 +111,25 @@ function renderSignups() {
           <div class="entry-meta">
             <span>想去時間：${escapeHtml(item.date)}</span>
             <span>${escapeHtml(item.createdAt)}</span>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderSubsidyHistory() {
+  const list = $("#subsidyHistoryList");
+  list.classList.toggle("empty", state.subsidyHistory.length === 0);
+  list.innerHTML = state.subsidyHistory
+    .map((item) => {
+      const memo = item.memo ? `<p>${escapeHtml(item.memo)}</p>` : "<p>無更新說明</p>";
+      return `
+        <article class="entry subsidy-entry">
+          <h3>${formatter.format(item.amount || 0)}</h3>
+          ${memo}
+          <div class="entry-meta">
+            <span>${escapeHtml(item.updatedAt)}</span>
           </div>
         </article>
       `;
@@ -143,17 +175,26 @@ $("#subsidyForm").addEventListener("submit", (event) => {
     return;
   }
 
-  state.subsidy = {
+  const update = {
+    id: createId(),
     amount: Number($("#subsidyAmount").value),
     memo: $("#subsidyMemo").value.trim(),
     updatedAt: todayText()
   };
+
+  state.subsidy = {
+    amount: update.amount,
+    memo: update.memo,
+    updatedAt: update.updatedAt
+  };
+  state.subsidyHistory.unshift(update);
+
   saveState();
-  message.textContent = state.subsidy.memo
-    ? `已更新：${state.subsidy.memo}`
-    : "補助款已更新。";
+  message.textContent = update.memo ? `已更新：${update.memo}` : "補助款已更新。";
   message.classList.add("success");
   $("#adminPassword").value = "";
+  $("#subsidyAmount").value = "";
+  $("#subsidyMemo").value = "";
   render();
 });
 
@@ -167,6 +208,13 @@ $("#clearWishes").addEventListener("click", () => {
 $("#clearSignups").addEventListener("click", () => {
   if (!state.signups.length || !confirm("確定清空所有報名資料？")) return;
   state.signups = [];
+  saveState();
+  render();
+});
+
+$("#clearSubsidyHistory").addEventListener("click", () => {
+  if (!state.subsidyHistory.length || !confirm("確定清空所有補助款更新紀錄？")) return;
+  state.subsidyHistory = [];
   saveState();
   render();
 });
