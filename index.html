@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>登山社團活動許願與報名</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-art" aria-hidden="true">
+        <div class="sun"></div>
+        <div class="ridge ridge-back"></div>
+        <div class="ridge ridge-front"></div>
+      </div>
+      <div class="header-content">
+        <p class="eyebrow">Mountain Club Board</p>
+        <h1>登山社團活動許願與報名</h1>
+        <p>開放社員提出想去的山、登記可參加時間，補助款由管理者維護。</p>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="summary-grid" aria-label="社團活動摘要">
+        <article class="summary-card">
+          <span>許願山岳</span>
+          <strong id="wishCount">0</strong>
+        </article>
+        <article class="summary-card">
+          <span>報名登記</span>
+          <strong id="signupCount">0</strong>
+        </article>
+        <article class="summary-card subsidy">
+          <span>剩餘補助款</span>
+          <strong id="subsidyTotal">NT$ 0</strong>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <div class="panel">
+          <div class="panel-heading">
+            <h2>發想人許願</h2>
+            <p>填寫想去的山，讓大家一起投票與規劃。</p>
+          </div>
+          <form id="wishForm" class="form-grid">
+            <label>
+              發想人
+              <input id="wishName" type="text" placeholder="例如：阿翔" required />
+            </label>
+            <label>
+              想去的山
+              <input id="mountainName" type="text" placeholder="例如：玉山、雪山、合歡山" required />
+            </label>
+            <label class="full">
+              備註
+              <textarea id="wishNote" rows="3" placeholder="路線、難度、想去原因"></textarea>
+            </label>
+            <button type="submit">送出許願</button>
+          </form>
+        </div>
+
+        <div class="panel">
+          <div class="panel-heading">
+            <h2>報名時間登記</h2>
+            <p>讓想去的人登記姓名與可參加時間。</p>
+          </div>
+          <form id="signupForm" class="form-grid">
+            <label>
+              報名人
+              <input id="signupName" type="text" placeholder="例如：小美" required />
+            </label>
+            <label>
+              想去時間
+              <input id="signupDate" type="date" required />
+            </label>
+            <label class="full">
+              偏好山岳或備註
+              <input id="signupNote" type="text" placeholder="例如：希望週六、可開車、想去百岳" />
+            </label>
+            <button type="submit">新增報名</button>
+          </form>
+        </div>
+
+        <div class="panel admin-panel">
+          <div class="panel-heading">
+            <h2>補助款管理</h2>
+            <p>管理者輸入密碼後才能新增或更新補助款。</p>
+          </div>
+          <form id="subsidyForm" class="form-grid">
+            <label>
+              管理密碼
+              <input id="adminPassword" type="password" inputmode="numeric" placeholder="請輸入密碼" required />
+            </label>
+            <label>
+              剩餘補助款
+              <input id="subsidyAmount" type="number" min="0" step="1" placeholder="例如：12000" required />
+            </label>
+            <label class="full">
+              更新說明
+              <input id="subsidyMemo" type="text" placeholder="例如：扣除交通補助後更新" />
+            </label>
+            <button type="submit">更新補助款</button>
+            <p id="adminMessage" class="form-message" role="status"></p>
+          </form>
+        </div>
+      </section>
+
+      <section class="lists">
+        <div class="list-panel">
+          <div class="panel-heading compact">
+            <h2>山岳許願清單</h2>
+            <button id="clearWishes" class="ghost-button" type="button">清空</button>
+          </div>
+          <div id="wishList" class="entry-list empty"></div>
+        </div>
+
+        <div class="list-panel">
+          <div class="panel-heading compact">
+            <h2>報名清單</h2>
+            <button id="clearSignups" class="ghost-button" type="button">清空</button>
+          </div>
+          <div id="signupList" class="entry-list empty"></div>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
