@@ -1,7 +1,37 @@
-const ADMIN_PASSWORD = "2738";
-const STORAGE_KEY = "mountainClubBoard";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import {
+  getDatabase,
+  onValue,
+  push,
+  ref,
+  remove,
+  set
+} from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
-const defaultState = {
+const ADMIN_PASSWORD = "2738";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDH_z8Ir5tOtZtday2EYCfI8Ag4Er71DvY",
+  authDomain: "mountain-club-site.firebaseapp.com",
+  databaseURL: "https://mountain-club-site-default-rtdb.firebaseio.com",
+  projectId: "mountain-club-site",
+  storageBucket: "mountain-club-site.firebasestorage.app",
+  messagingSenderId: "493691203812",
+  appId: "1:493691203812:web:39f535bdea485124847cf1",
+  measurementId: "G-5KJMTQ315S"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const dbRefs = {
+  wishes: ref(db, "wishes"),
+  signups: ref(db, "signups"),
+  subsidy: ref(db, "subsidy"),
+  subsidyHistory: ref(db, "subsidyHistory")
+};
+
+const state = {
   wishes: [],
   signups: [],
   subsidy: {
@@ -12,8 +42,6 @@ const defaultState = {
   subsidyHistory: []
 };
 
-const state = loadState();
-
 const $ = (selector) => document.querySelector(selector);
 const formatter = new Intl.NumberFormat("zh-TW", {
   style: "currency",
@@ -21,49 +49,46 @@ const formatter = new Intl.NumberFormat("zh-TW", {
   maximumFractionDigits: 0
 });
 
-function loadState() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-    return {
-      ...defaultState,
-      ...saved,
-      subsidy: {
-        ...defaultState.subsidy,
-        ...(saved.subsidy || {})
-      },
-      subsidyHistory: saved.subsidyHistory || []
-    };
-  } catch {
-    return structuredClone(defaultState);
-  }
+function listFromSnapshot(snapshot) {
+  const value = snapshot.val();
+  if (!value) return [];
+  return Object.entries(value)
+    .map(([id, item]) => ({ id, ...item }))
+    .sort((a, b) => (b.createdAtMs || b.updatedAtMs || 0) - (a.createdAtMs || a.updatedAtMs || 0));
 }
 
-function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-}
-
-function todayText() {
-  return new Intl.DateTimeFormat("zh-TW", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date());
-}
-
-function createId() {
-  if (crypto.randomUUID) return crypto.randomUUID();
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+function nowInfo() {
+  const date = new Date();
+  return {
+    text: new Intl.DateTimeFormat("zh-TW", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit"
+    }).format(date),
+    ms: date.getTime()
+  };
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function setMessage(text, isSuccess = false) {
+  const message = $("#adminMessage");
+  message.textContent = text;
+  message.classList.toggle("success", isSuccess);
+}
+
+function requireAdminPassword(actionText) {
+  const password = prompt(`${actionText}\n請輸入管理密碼：`);
+  return password === ADMIN_PASSWORD;
 }
 
 function render() {
@@ -137,86 +162,93 @@ function renderSubsidyHistory() {
     .join("");
 }
 
-$("#wishForm").addEventListener("submit", (event) => {
+onValue(dbRefs.wishes, (snapshot) => {
+  state.wishes = listFromSnapshot(snapshot);
+  render();
+});
+
+onValue(dbRefs.signups, (snapshot) => {
+  state.signups = listFromSnapshot(snapshot);
+  render();
+});
+
+onValue(dbRefs.subsidy, (snapshot) => {
+  state.subsidy = snapshot.val() || { amount: 0, memo: "", updatedAt: "" };
+  render();
+});
+
+onValue(dbRefs.subsidyHistory, (snapshot) => {
+  state.subsidyHistory = listFromSnapshot(snapshot);
+  render();
+});
+
+$("#wishForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  state.wishes.unshift({
-    id: createId(),
+  const createdAt = nowInfo();
+  await push(dbRefs.wishes, {
     name: $("#wishName").value.trim(),
     mountain: $("#mountainName").value.trim(),
     note: $("#wishNote").value.trim(),
-    createdAt: todayText()
+    createdAt: createdAt.text,
+    createdAtMs: createdAt.ms
   });
-  saveState();
   event.currentTarget.reset();
-  render();
 });
 
-$("#signupForm").addEventListener("submit", (event) => {
+$("#signupForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  state.signups.unshift({
-    id: createId(),
+  const createdAt = nowInfo();
+  await push(dbRefs.signups, {
     name: $("#signupName").value.trim(),
     date: $("#signupDate").value,
     note: $("#signupNote").value.trim(),
-    createdAt: todayText()
+    createdAt: createdAt.text,
+    createdAtMs: createdAt.ms
   });
-  saveState();
   event.currentTarget.reset();
-  render();
 });
 
-$("#subsidyForm").addEventListener("submit", (event) => {
+$("#subsidyForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const message = $("#adminMessage");
 
   if ($("#adminPassword").value !== ADMIN_PASSWORD) {
-    message.textContent = "密碼錯誤，無法更新補助款。";
-    message.classList.remove("success");
+    setMessage("密碼錯誤，無法更新補助款。");
     return;
   }
 
+  const updatedAt = nowInfo();
   const update = {
-    id: createId(),
     amount: Number($("#subsidyAmount").value),
     memo: $("#subsidyMemo").value.trim(),
-    updatedAt: todayText()
+    updatedAt: updatedAt.text,
+    updatedAtMs: updatedAt.ms
   };
 
-  state.subsidy = {
-    amount: update.amount,
-    memo: update.memo,
-    updatedAt: update.updatedAt
-  };
-  state.subsidyHistory.unshift(update);
+  await set(dbRefs.subsidy, update);
+  await push(dbRefs.subsidyHistory, update);
 
-  saveState();
-  message.textContent = update.memo ? `已更新：${update.memo}` : "補助款已更新。";
-  message.classList.add("success");
+  setMessage(update.memo ? `已更新：${update.memo}` : "補助款已更新。", true);
   $("#adminPassword").value = "";
   $("#subsidyAmount").value = "";
   $("#subsidyMemo").value = "";
-  render();
 });
 
-$("#clearWishes").addEventListener("click", () => {
-  if (!state.wishes.length || !confirm("確定清空所有許願資料？")) return;
-  state.wishes = [];
-  saveState();
-  render();
+$("#clearWishes").addEventListener("click", async () => {
+  if (!state.wishes.length) return;
+  if (!requireAdminPassword("確定清空所有許願資料？")) return;
+  await remove(dbRefs.wishes);
 });
 
-$("#clearSignups").addEventListener("click", () => {
-  if (!state.signups.length || !confirm("確定清空所有報名資料？")) return;
-  state.signups = [];
-  saveState();
-  render();
+$("#clearSignups").addEventListener("click", async () => {
+  if (!state.signups.length) return;
+  if (!requireAdminPassword("確定清空所有報名資料？")) return;
+  await remove(dbRefs.signups);
 });
 
-$("#clearSubsidyHistory").addEventListener("click", () => {
-  if (!state.subsidyHistory.length || !confirm("確定清空所有補助款更新紀錄？")) return;
-  state.subsidyHistory = [];
-  saveState();
-  render();
+$("#clearSubsidyHistory").addEventListener("click", async () => {
+  if (!state.subsidyHistory.length) return;
+  if (!requireAdminPassword("確定清空所有補助款更新紀錄？")) return;
+  await remove(dbRefs.subsidyHistory);
 });
 
 render();
